@@ -10,7 +10,8 @@ This Basket API is one component in a microservices architecture that includes:
 - **Discount API**: Manages product discounts (gRPC)
 - **Ordering API**: Processes orders (SQL Server)
 
-![Microservices Architecture](architecture-diagram.png)
+
+![b2](https://github.com/user-attachments/assets/a27bf81a-a511-4de0-b3d5-2ea9bc0ca984)
 
 ## Features
 
