@@ -1,26 +1,46 @@
 using BasketAPI.Application.Features.ShoppingCart.Commands;
 using BasketAPI.Application.Features.ShoppingCart.Queries;
+using BasketAPI.Domain.Exceptions;
 using Carter;
 using MediatR;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.OpenApi.Models;
 
 namespace BasketAPI.API.Features.ShoppingCart;
 
 public class CartEndpoints : ICarterModule
 {
     public void AddRoutes(IEndpointRouteBuilder app)
-    {
-        var group = app.MapGroup("/basket").WithTags("Basket");
+    {        var group = app.MapGroup("/basket")
+            .WithTags("Basket")
+            .RequireRateLimiting("fixed")
+            .WithOpenApi(operation => new(operation)
+            {
+                Description = "Shopping cart operations for managing user baskets"
+            });
 
         // Get basket by username
         group.MapGet("/{userName}", async (string userName, ISender mediator) =>
         {
-            var query = new GetBasketQuery(userName);
-            var result = await mediator.Send(query);
-            
-            return result is null ? Results.NotFound() : Results.Ok(result);
+            var query = new GetBasketQuery(userName);            try
+            {
+                var result = await mediator.Send(query);
+                return result is null 
+                    ? Results.Problem(
+                        statusCode: StatusCodes.Status404NotFound,
+                        title: "Basket not found",
+                        detail: $"Basket for user {userName} was not found")
+                    : Results.Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return Results.Problem(
+                    statusCode: StatusCodes.Status500InternalServerError,
+                    title: "Error retrieving basket",
+                    detail: ex.Message);
+            }
         })
         .WithName("GetBasket")
         .Produces<Domain.Entities.ShoppingCart>(StatusCodes.Status200OK)
@@ -29,12 +49,33 @@ public class CartEndpoints : ICarterModule
         // Update basket
         group.MapPost("/{userName}", async (string userName, 
             UpdateBasketCommand command, ISender mediator) =>
-        {
-            if (userName != command.UserName)
-                return Results.BadRequest("Username mismatch");
+        {            try
+            {
+                if (userName != command.UserName)
+                {
+                    return Results.Problem(
+                        statusCode: StatusCodes.Status400BadRequest,
+                        title: "Username mismatch",
+                        detail: "The username in the URL does not match the username in the request body");
+                }
                 
-            var result = await mediator.Send(command);
-            return Results.Ok(result);
+                var result = await mediator.Send(command);
+                return Results.Ok(result);
+            }
+            catch (ValidationException validationEx)
+            {
+                return Results.ValidationProblem(
+                    validationEx.Errors.ToDictionary(
+                        kvp => kvp.Key,
+                        kvp => kvp.Value));
+            }
+            catch (Exception ex)
+            {
+                return Results.Problem(
+                    statusCode: StatusCodes.Status500InternalServerError,
+                    title: "Error updating basket",
+                    detail: ex.Message);
+            }
         })
         .WithName("UpdateBasket")
         .Produces<Domain.Entities.ShoppingCart>(StatusCodes.Status200OK)

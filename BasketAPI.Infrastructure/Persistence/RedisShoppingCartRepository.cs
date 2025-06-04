@@ -11,6 +11,8 @@ public class RedisShoppingCartRepository : IShoppingCartRepository
     private readonly IConnectionMultiplexer _redis;
     private readonly ILogger<RedisShoppingCartRepository> _logger;
     private const string KeyPrefix = "basket:";
+    private readonly JsonSerializerOptions _jsonOptions;
+    private readonly TimeSpan _cacheExpiry = TimeSpan.FromDays(30);
 
     public RedisShoppingCartRepository(
         IConnectionMultiplexer redis,
@@ -18,21 +20,30 @@ public class RedisShoppingCartRepository : IShoppingCartRepository
     {
         _redis = redis;
         _logger = logger;
+        _jsonOptions = new JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true,
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+        };
     }
 
-    public async Task<ShoppingCart?> GetByUserIdAsync(string userId)
+    private static string GetKey(string userId) => $"{KeyPrefix}{userId}";    public async Task<ShoppingCart?> GetByUserIdAsync(string userId)
     {
         try
         {
             var db = _redis.GetDatabase();
-            var data = await db.StringGetAsync($"{KeyPrefix}{userId}");
+            var data = await db.StringGetAsync(GetKey(userId));
 
             if (data.IsNullOrEmpty)
             {
+                _logger.LogInformation("Shopping cart not found for user {UserId}", userId);
                 return null;
             }
 
-            return JsonSerializer.Deserialize<ShoppingCart>(data!);
+            var cart = JsonSerializer.Deserialize<ShoppingCart>(data!, _jsonOptions);
+            _logger.LogInformation("Retrieved shopping cart for user {UserId} with {ItemCount} items", 
+                userId, cart?.Items.Count ?? 0);
+            return cart;
         }
         catch (Exception ex)
         {
