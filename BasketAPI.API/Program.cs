@@ -1,4 +1,5 @@
 using BasketAPI.Infrastructure.Configuration;
+using BasketAPI.API.Configuration;
 using BasketAPI.API.HealthChecks;
 using BasketAPI.API.Middleware;
 using BasketAPI.Application.Common.Behaviors;
@@ -24,45 +25,20 @@ builder.Host.UseSerilog((context, services, configuration) => configuration
     .WriteTo.Console());
 
 // Add services to the container
-builder.Services.AddControllers();
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(c =>
-{
-    c.SwaggerDoc("v1", new OpenApiInfo { 
-        Title = "Basket API", 
-        Version = "v1",
-        Description = "A shopping cart microservice with Redis and gRPC integration",
-        Contact = new OpenApiContact
-        {
-            Name = "API Support",
-            Email = "support@basketapi.com"
-        }
-    });
-    
-    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
     {
-        Description = "JWT Authorization header using the Bearer scheme",
-        Name = "Authorization",
-        In = ParameterLocation.Header,
-        Type = SecuritySchemeType.Http,
-        Scheme = "bearer"
+        options.JsonSerializerOptions.PropertyNamingPolicy = null;
+        options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
     });
 
-    c.AddSecurityRequirement(new OpenApiSecurityRequirement
-    {
-        {
-            new OpenApiSecurityScheme
-            {
-                Reference = new OpenApiReference
-                {
-                    Type = ReferenceType.SecurityScheme,
-                    Id = "Bearer"
-                }
-            },
-            Array.Empty<string>()
-        }
-    });
-});
+builder.Services.AddEndpointsApiExplorer();
+
+// Add configurations
+builder.Services.AddSwaggerConfiguration();
+builder.Services.AddCorsConfiguration(builder.Configuration);
+builder.Services.AddGrpcConfiguration(builder.Configuration);
+builder.Services.AddMassTransitConfiguration(builder.Configuration);
 
 // Add Infrastructure services (including Redis)
 builder.Services.AddInfrastructureServices(builder.Configuration);
