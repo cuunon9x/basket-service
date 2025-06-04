@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  basketapi:
+    image: basket-api
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "5002:80"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__Redis=redis:6379
+      - GrpcSettings__DiscountUrl=http://discount-grpc:5003
+      - RabbitMQ__Host=rabbitmq
+    depends_on:
+      - redis
+      - rabbitmq
+    networks:
+      - microservices-network
+
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - microservices-network
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    environment:
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
+    networks:
+      - microservices-network
+
+networks:
+  microservices-network:
+    driver: bridge
+
+volumes:
+  redis-data:
+  rabbitmq-data:

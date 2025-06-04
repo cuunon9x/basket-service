@@ -6,7 +6,6 @@ using BasketAPI.Infrastructure.Persistence.Decorators;
 using Scrutor;
 using BasketAPI.Infrastructure.Services;
 using BasketAPI.Infrastructure.Services.Grpc;
-using MassTransit;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -42,23 +41,6 @@ public static class DependencyInjection
         
         services.AddScoped<IDiscountGrpcService, DiscountGrpcService>();
         services.AddScoped<IDiscountService, DiscountService>();
-
-        // Configure MassTransit
-        services.AddMassTransit(x =>
-        {
-            x.UsingRabbitMq((context, cfg) =>
-            {
-                cfg.Host(configuration["RabbitMQ:Host"], "/", h =>
-                {
-                    h.Username(configuration["RabbitMQ:Username"]);
-                    h.Password(configuration["RabbitMQ:Password"]);
-                });
-
-                // Configure endpoints here if needed
-                cfg.ConfigureEndpoints(context);
-            });
-        });
-
         services.AddScoped<IMessagePublisher, MessagePublisher>();
 
         return services;

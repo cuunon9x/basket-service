@@ -5,15 +5,20 @@ using Carter;
 using MediatR;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.OpenApi.Models;
 
 namespace BasketAPI.API.Features.ShoppingCart;
 
+/// <summary>
+/// Endpoints for managing shopping cart operations
+/// </summary>
 public class CartEndpoints : ICarterModule
 {
     public void AddRoutes(IEndpointRouteBuilder app)
-    {        var group = app.MapGroup("/basket")
+    {
+        var group = app.MapGroup("/basket")
             .WithTags("Basket")
             .RequireRateLimiting("fixed")
             .WithOpenApi(operation => new(operation)
@@ -22,9 +27,10 @@ public class CartEndpoints : ICarterModule
             });
 
         // Get basket by username
-        group.MapGet("/{userName}", async (string userName, ISender mediator) =>
+        group.MapGet("/{userName}", async ([FromRoute] string userName, ISender mediator) =>
         {
-            var query = new GetBasketQuery(userName);            try
+            var query = new GetBasketQuery(userName);
+            try
             {
                 var result = await mediator.Send(query);
                 return result is null 
@@ -47,9 +53,10 @@ public class CartEndpoints : ICarterModule
         .Produces(StatusCodes.Status404NotFound);
 
         // Update basket
-        group.MapPost("/{userName}", async (string userName, 
-            UpdateBasketCommand command, ISender mediator) =>
-        {            try
+        group.MapPost("/{userName}", async ([FromRoute] string userName, 
+            [FromBody] UpdateBasketCommand command, ISender mediator) =>
+        {
+            try
             {
                 if (userName != command.UserName)
                 {
@@ -82,7 +89,7 @@ public class CartEndpoints : ICarterModule
         .Produces(StatusCodes.Status400BadRequest);
 
         // Delete basket
-        group.MapDelete("/{userName}", async (string userName, ISender mediator) =>
+        group.MapDelete("/{userName}", async ([FromRoute] string userName, ISender mediator) =>
         {
             var command = new DeleteBasketCommand(userName);
             await mediator.Send(command);
@@ -92,7 +99,7 @@ public class CartEndpoints : ICarterModule
         .Produces(StatusCodes.Status204NoContent);
 
         // Checkout basket
-        group.MapPost("/checkout", async (CheckoutBasketCommand command, ISender mediator) =>
+        group.MapPost("/checkout", async ([FromBody] CheckoutBasketCommand command, ISender mediator) =>
         {
             var result = await mediator.Send(command);
             return result ? Results.Accepted() : Results.BadRequest("Checkout failed");
