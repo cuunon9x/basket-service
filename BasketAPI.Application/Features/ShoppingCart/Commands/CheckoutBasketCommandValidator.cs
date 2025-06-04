@@ -3,11 +3,14 @@ using FluentValidation;
 namespace BasketAPI.Application.Features.ShoppingCart.Commands;
 
 public class CheckoutBasketCommandValidator : AbstractValidator<CheckoutBasketCommand>
-{
-    public CheckoutBasketCommandValidator()
+{    public CheckoutBasketCommandValidator()
     {
         RuleFor(v => v.UserName)
-            .NotEmpty().WithMessage("UserName is required");
+            .NotEmpty().WithMessage("UserName is required")
+            .MinimumLength(3).WithMessage("Username must be at least 3 characters long");
+
+        RuleFor(v => v.TotalPrice)
+            .GreaterThan(0).WithMessage("Total price must be greater than 0");
 
         RuleFor(v => v.EmailAddress)
             .NotEmpty().WithMessage("EmailAddress is required")

@@ -2,6 +2,7 @@ using BasketAPI.Infrastructure.Configuration;
 using BasketAPI.API.HealthChecks;
 using BasketAPI.API.Middleware;
 using BasketAPI.Application.Common.Behaviors;
+using BasketAPI.Application.Common.Mappings;
 using Carter;
 using FluentValidation;
 using HealthChecks.UI.Client;
@@ -68,7 +69,13 @@ builder.Services.AddInfrastructureServices(builder.Configuration);
 
 // Add Validation and Behaviors
 builder.Services.AddValidatorsFromAssembly(typeof(ValidationBehavior<,>).Assembly);
+
+// Add MediatR Pipeline Behaviors
 builder.Services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
+builder.Services.AddTransient(typeof(IPipelineBehavior<,>), typeof(LoggingBehavior<,>));
+
+// Add Mapster configuration
+builder.Services.AddApplicationMappings();
 
 // Add Carter for minimal APIs
 builder.Services.AddCarter();
