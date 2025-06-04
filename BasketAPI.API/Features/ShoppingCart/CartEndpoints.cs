@@ -27,7 +27,7 @@ public class CartEndpoints : ICarterModule
             });
 
         // Get basket by username
-        group.MapGet("/{userName}", async ([FromRoute] string userName, ISender mediator) =>
+        group.MapGet("/{userName}", async ([FromRoute] string userName, [FromServices] ISender mediator) =>
         {
             var query = new GetBasketQuery(userName);
             try
@@ -54,7 +54,7 @@ public class CartEndpoints : ICarterModule
 
         // Update basket
         group.MapPost("/{userName}", async ([FromRoute] string userName, 
-            [FromBody] UpdateBasketCommand command, ISender mediator) =>
+            [FromBody] UpdateBasketCommand command, [FromServices] ISender mediator) =>
         {
             try
             {
@@ -89,7 +89,7 @@ public class CartEndpoints : ICarterModule
         .Produces(StatusCodes.Status400BadRequest);
 
         // Delete basket
-        group.MapDelete("/{userName}", async ([FromRoute] string userName, ISender mediator) =>
+        group.MapDelete("/{userName}", async ([FromRoute] string userName, [FromServices] ISender mediator) =>
         {
             var command = new DeleteBasketCommand(userName);
             await mediator.Send(command);
@@ -99,7 +99,7 @@ public class CartEndpoints : ICarterModule
         .Produces(StatusCodes.Status204NoContent);
 
         // Checkout basket
-        group.MapPost("/checkout", async ([FromBody] CheckoutBasketCommand command, ISender mediator) =>
+        group.MapPost("/checkout", async ([FromBody] CheckoutBasketCommand command, [FromServices] ISender mediator) =>
         {
             var result = await mediator.Send(command);
             return result ? Results.Accepted() : Results.BadRequest("Checkout failed");

@@ -56,6 +56,27 @@ builder.Services.AddApplicationMappings();
 // Add Carter for minimal APIs
 builder.Services.AddCarter();
 
+// Configure Rate Limiting
+builder.Services.AddRateLimiter(options =>
+{
+    options.AddFixedWindowLimiter("fixed", options =>
+    {
+        options.PermitLimit = 100;
+        options.Window = TimeSpan.FromMinutes(1);
+    });
+
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.OnRejected = async (context, _) =>
+    {
+        context.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+        await context.HttpContext.Response.WriteAsJsonAsync(new
+        {
+            error = "Too many requests. Please try again later.",
+            retryAfter = "60 seconds"
+        });
+    };
+});
+
 // Add Health Checks
 builder.Services.AddHealthChecks()
     .AddRedis(
@@ -83,35 +104,15 @@ builder.Services.AddCors(options =>
     });
 });
 
-// Add Rate Limiting
-builder.Services.AddRateLimiter(options =>
-{
-    options.AddFixedWindowLimiter("fixed", options =>
-    {
-        options.PermitLimit = 100;
-        options.Window = TimeSpan.FromMinutes(1);
-    });
-
-    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
-    options.OnRejected = async (context, _) =>
-    {
-        context.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
-        await context.HttpContext.Response.WriteAsJsonAsync(new
-        {
-            error = "Too many requests. Please try again later.",
-            retryAfter = 60 // seconds
-        });
-    };
-});
-
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+app.UseSwagger();
+app.UseSwaggerUI(options =>
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+    options.SwaggerEndpoint("/swagger/v1/swagger.json", "Basket API V1");
+    options.RoutePrefix = "swagger";
+});
 
 app.UseHttpsRedirection();
 app.UseCors("BasketCorsPolicy");
@@ -152,8 +153,5 @@ app.MapHealthChecks("/health/live", new()
 
 // Map Carter endpoints
 app.MapCarter();
-
-// Health check endpoint
-app.MapHealthChecks("/health");
 
 app.Run();

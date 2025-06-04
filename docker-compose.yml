@@ -9,16 +9,23 @@ services:
     ports:
       - "5002:80"
     environment:
-      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_ENVIRONMENT=Production
       - ConnectionStrings__Redis=redis:6379
       - GrpcSettings__DiscountUrl=http://discount-grpc:5003
       - RabbitMQ__Host=rabbitmq
     depends_on:
-      - redis
-      - rabbitmq
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:80/health/live || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
     networks:
       - microservices-network
-
   redis:
     image: redis:alpine
     ports:
@@ -27,9 +34,19 @@ services:
       - redis-data:/data
     networks:
       - microservices-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
 
   rabbitmq:
     image: rabbitmq:3-management-alpine
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
     ports:
       - "5672:5672"
       - "15672:15672"
