@@ -3,6 +3,7 @@ using BasketAPI.Domain.Common;
 using BasketAPI.Infrastructure.Metrics;
 using BasketAPI.Infrastructure.Persistence;
 using BasketAPI.Infrastructure.Persistence.Decorators;
+using Scrutor;
 using BasketAPI.Infrastructure.Services;
 using BasketAPI.Infrastructure.Services.Grpc;
 using MassTransit;
@@ -21,14 +22,17 @@ public static class DependencyInjection
         // Register metrics
         services.AddSingleton<IMetrics, PrometheusMetrics>();
 
-        // Register repository with metrics decorator
+        // Register base repository
         services.AddScoped<RedisShoppingCartRepository>();
-        services.AddScoped<IShoppingCartRepository>(sp => 
-        {
-            var repository = sp.GetRequiredService<RedisShoppingCartRepository>();
-            var metrics = sp.GetRequiredService<IMetrics>();
-            return new MetricsShoppingCartRepositoryDecorator(repository, metrics);
-        });
+        services.AddScoped<IShoppingCartRepository, RedisShoppingCartRepository>();
+
+        // Register decorators in order (innermost to outermost)
+        // 1. Metrics - measure performance metrics
+        // 2. Logging - log operations
+        // 3. Caching - cache results for performance
+        services.Decorate<IShoppingCartRepository, MetricsShoppingCartRepositoryDecorator>();
+        services.Decorate<IShoppingCartRepository, LoggingShoppingCartDecorator>();
+        services.Decorate<IShoppingCartRepository, CachingShoppingCartDecorator>();
         
         // Configure gRPC Client
         services.AddGrpcClient<DiscountProtoService.DiscountProtoServiceClient>(options =>
