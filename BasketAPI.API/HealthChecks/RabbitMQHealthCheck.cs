@@ -34,7 +34,7 @@ public class RabbitMQHealthCheck : IHealthCheck
 
             var connection = await factory.CreateConnectionAsync(cancellationToken);
             var channel = await connection.CreateChannelAsync();
-            
+
             // Create a temporary exchange to test
             var exchangeName = $"healthcheck_{Guid.NewGuid()}";
             await channel.ExchangeDeclareAsync(exchangeName, ExchangeType.Direct, autoDelete: true);
@@ -42,7 +42,7 @@ public class RabbitMQHealthCheck : IHealthCheck
 
             await channel.CloseAsync();
             await connection.CloseAsync();
-            
+
             return HealthCheckResult.Healthy("RabbitMQ connection is healthy");
         }
         catch (BrokerUnreachableException ex)

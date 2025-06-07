@@ -31,7 +31,7 @@ public class ExceptionHandlingMiddleware
     private static async Task HandleExceptionAsync(HttpContext context, Exception exception)
     {
         context.Response.ContentType = "application/json";
-        
+
         var response = new
         {
             Status = "Error",

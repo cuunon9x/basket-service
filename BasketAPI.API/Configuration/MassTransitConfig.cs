@@ -25,30 +25,18 @@ public static class MassTransitConfig
                     h.Username(username);
                     h.Password(password);
 
-                    // SSL Configuration if needed
-                    h.UseSsl(s =>
+                    // SSL Configuration if enabled
+                    var useSsl = configuration.GetValue<bool>("RabbitMQ:UseSsl", false);
+                    if (useSsl)
                     {
-                        s.Protocol = SslProtocols.Tls12;
-                    });
+                        h.UseSsl(s =>
+                        {
+                            s.Protocol = SslProtocols.Tls12;
+                        });
+                    }
                 });
 
-                // Retry configuration
-                cfg.UseMessageRetry(r =>
-                {
-                    r.Incremental(3, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(2));
-                });
-
-                // Circuit breaker
-                cfg.UseCircuitBreaker(cb =>
-                {
-                    cb.TrackingPeriod = TimeSpan.FromMinutes(1);
-                    cb.TripThreshold = 15;
-                    cb.ResetInterval = TimeSpan.FromMinutes(5);
-                });
-
-                // Rate limiter
-                cfg.UseRateLimit(1000, TimeSpan.FromMinutes(1));
-
+                // Configure as publish-only
                 cfg.ConfigureEndpoints(context);
             });
         });

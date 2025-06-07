@@ -1,15 +1,21 @@
 using BasketAPI.Domain.Common;
+using System.Text.Json.Serialization;
 
 namespace BasketAPI.Domain.Entities;
 
 public class ShoppingCart : Entity
 {
     public string UserId { get; private set; }
-    public List<CartItem> Items { get; private set; } = new();
-
-    public ShoppingCart(string userId)
+    public List<CartItem> Items { get; private set; } = new(); public ShoppingCart(string userId)
     {
         UserId = userId;
+    }    // Constructor for JSON deserialization
+    [JsonConstructor]
+    public ShoppingCart(Guid id, string userId, List<CartItem> items)
+    {
+        Id = id;
+        UserId = userId;
+        Items = items ?? new List<CartItem>();
     }
 
     public void AddItem(CartItem item)

@@ -8,7 +8,8 @@ using BasketAPI.Infrastructure.Services.Grpc;
 namespace BasketAPI.API.Configuration;
 
 public static class GrpcConfig
-{    public static IServiceCollection AddGrpcConfiguration(
+{
+    public static IServiceCollection AddGrpcConfiguration(
         this IServiceCollection services,
         IConfiguration configuration)
     {
@@ -18,7 +19,7 @@ public static class GrpcConfig
         // Configure gRPC client with retry policy
         services.AddGrpcClient<DiscountProtoService.DiscountProtoServiceClient>(options =>
         {
-            options.Address = new Uri(configuration["GrpcSettings:DiscountUrl"] ?? 
+            options.Address = new Uri(configuration["GrpcSettings:DiscountUrl"] ??
                 throw new InvalidOperationException("GrpcSettings:DiscountUrl is not configured"));
         })
         .ConfigureChannel(options =>

@@ -20,7 +20,7 @@ public class MetricsShoppingCartRepositoryDecorator : IShoppingCartRepository
     {
         var timer = new Stopwatch();
         timer.Start();
-        
+
         try
         {
             var result = await _inner.UpdateAsync(basket);
@@ -28,7 +28,7 @@ public class MetricsShoppingCartRepositoryDecorator : IShoppingCartRepository
                 "basket_repository_operations_total",
                 "Total number of basket repository operations",
                 "update", "success");
-            
+
             return result;
         }
         catch (Exception)
@@ -54,7 +54,7 @@ public class MetricsShoppingCartRepositoryDecorator : IShoppingCartRepository
     {
         var timer = new Stopwatch();
         timer.Start();
-        
+
         try
         {
             await _inner.DeleteAsync(userName);

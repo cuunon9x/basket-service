@@ -36,9 +36,9 @@ public class GrpcExceptionInterceptor : Interceptor
         }
         catch (RpcException ex)
         {
-            _logger.LogError(ex, "gRPC call failed with status code {StatusCode}: {Message}", 
+            _logger.LogError(ex, "gRPC call failed with status code {StatusCode}: {Message}",
                 ex.StatusCode, ex.Message);
-                
+
             switch (ex.StatusCode)
             {
                 case StatusCode.NotFound:

@@ -15,37 +15,45 @@ This Basket API is one component in a microservices architecture that includes:
 
 ## Features
 
-- Shopping cart CRUD operations
-- Redis caching for high-performance data access
+- Shopping cart CRUD operations with Redis persistence
+- High-performance data access with Redis caching
 - Discount service integration via gRPC
 - Asynchronous checkout processing with RabbitMQ
 - Built with .NET 8 and Clean Architecture principles
+- Health monitoring and metrics collection
+- Containerized deployment with Docker
 
 ## Prerequisites
 
 - .NET 8 SDK
-- Redis Server (for cart storage)
-- RabbitMQ Server (for checkout message publishing)
+- Docker and Docker Compose
+- Redis Server (included in docker-compose)
+- RabbitMQ Server (included in docker-compose)
 - Discount Service (gRPC integration)
-- Docker (optional)
 
 ## Getting Started
 
+### Docker Deployment (Recommended)
+
+1. Clone the repository
+2. Run the services:
+   ```powershell
+   docker compose up -d
+   ```
+3. Access the API:
+   - Swagger UI: http://localhost:5002/swagger
+   - Health Check: http://localhost:5002/health
+   - RabbitMQ Management: http://localhost:15672 (guest/guest)
+
 ### Local Development
 
-1. Clone the repository:
+1. Start dependencies (if not using docker-compose):
    ```powershell
-   git clone https://github.com/yourusername/basket-api.git
-   cd basket-api
-   ```
+   # Start Redis
+   docker run -d -p 6379:6379 --name basket-redis redis:alpine
 
-2. Start required services:
-   ```powershell
-   # Start Redis (if using Docker)
-   docker run -d -p 6379:6379 --name basket-redis redis
-
-   # Start RabbitMQ (if using Docker)
-   docker run -d -p 5672:5672 -p 15672:15672 --name basket-rabbitmq rabbitmq:3-management
+   # Start RabbitMQ
+   docker run -d -p 5672:5672 -p 15672:15672 --name basket-rabbitmq rabbitmq:3-management-alpine
    ```
 
 3. Update configurations if needed:
@@ -70,9 +78,8 @@ This Basket API is one component in a microservices architecture that includes:
    docker build -t basket-api .
    ```
 
-2. Run the container:
-   ```powershell
-   docker run -d -p 5196:80 --name basket-api basket-api
+2. Run the container:   ```powershell
+   docker run -d -p 5002:80 --name basket-api basket-api
    ```
 
 ## Architecture

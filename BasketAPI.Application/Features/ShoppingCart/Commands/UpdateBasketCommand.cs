@@ -33,13 +33,18 @@ public class UpdateBasketCommandHandler : IRequestHandler<UpdateBasketCommand, D
             request.UserName, request.Items.Count);
 
         // Create new cart
-        var cart = new Domain.Entities.ShoppingCart(request.UserName);
-
-        // Apply discounts and add items
-        foreach (var item in request.Items)
+        var cart = new Domain.Entities.ShoppingCart(request.UserName);        // Apply discounts and add items
+        foreach (var requestItem in request.Items)
         {
-            await item.ApplyDiscount(_discountService, _logger);
-            cart.AddItem(item);
+            // Create new CartItem with proper ID generation
+            var cartItem = new CartItem(
+                requestItem.ProductId,
+                requestItem.ProductName,
+                requestItem.UnitPrice,
+                requestItem.Quantity);
+
+            await cartItem.ApplyDiscount(_discountService, _logger);
+            cart.AddItem(cartItem);
         }
 
         // Save to repository

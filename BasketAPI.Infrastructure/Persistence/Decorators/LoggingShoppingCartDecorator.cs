@@ -26,11 +26,11 @@ public class LoggingShoppingCartDecorator : IShoppingCartRepository
             _logger.LogInformation("Getting basket for user {UserId}", userId);
             var result = await _decorated.GetByUserIdAsync(userId);
             stopwatch.Stop();
-            
+
             _logger.LogInformation(
                 "Got basket for user {UserId} in {ElapsedMilliseconds}ms. Found: {Found}",
                 userId, stopwatch.ElapsedMilliseconds, result != null);
-                
+
             return result;
         }
         catch (Exception ex)
@@ -46,16 +46,16 @@ public class LoggingShoppingCartDecorator : IShoppingCartRepository
         try
         {
             _logger.LogInformation(
-                "Updating basket for user {UserId}. Items count: {ItemsCount}", 
+                "Updating basket for user {UserId}. Items count: {ItemsCount}",
                 cart.UserId, cart.Items.Count);
-                
+
             var result = await _decorated.UpdateAsync(cart);
             stopwatch.Stop();
-            
+
             _logger.LogInformation(
                 "Updated basket for user {UserId} in {ElapsedMilliseconds}ms",
                 cart.UserId, stopwatch.ElapsedMilliseconds);
-                
+
             return result;
         }
         catch (Exception ex)
@@ -73,7 +73,7 @@ public class LoggingShoppingCartDecorator : IShoppingCartRepository
             _logger.LogInformation("Deleting basket for user {UserId}", userId);
             await _decorated.DeleteAsync(userId);
             stopwatch.Stop();
-            
+
             _logger.LogInformation(
                 "Deleted basket for user {UserId} in {ElapsedMilliseconds}ms",
                 userId, stopwatch.ElapsedMilliseconds);

@@ -25,7 +25,9 @@ public class CachingShoppingCartDecorator : IShoppingCartRepository
         _logger = logger;
         _jsonOptions = new JsonSerializerOptions
         {
-            PropertyNameCaseInsensitive = true
+            PropertyNameCaseInsensitive = true,
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            IncludeFields = true
         };
     }
 
@@ -45,7 +47,7 @@ public class CachingShoppingCartDecorator : IShoppingCartRepository
         // If not in cache, get from repository
         _logger.LogInformation("Cache miss for basket {UserId}", userId);
         var cart = await _decorated.GetByUserIdAsync(userId);
-        
+
         // Cache the result if not null
         if (cart != null)
         {
@@ -59,10 +61,10 @@ public class CachingShoppingCartDecorator : IShoppingCartRepository
     {
         // Update in repository first
         var updated = await _decorated.UpdateAsync(cart);
-        
+
         // Then update cache
         await CacheBasketAsync(updated);
-        
+
         return updated;
     }
 
@@ -70,12 +72,12 @@ public class CachingShoppingCartDecorator : IShoppingCartRepository
     {
         // Delete from repository first
         await _decorated.DeleteAsync(userId);
-        
+
         // Then remove from cache
         var key = GetKey(userId);
         var db = _redis.GetDatabase();
         await db.KeyDeleteAsync(key);
-        
+
         _logger.LogInformation("Deleted basket from cache for {UserId}", userId);
     }
 
@@ -84,7 +86,7 @@ public class CachingShoppingCartDecorator : IShoppingCartRepository
         var key = GetKey(cart.UserId);
         var db = _redis.GetDatabase();
         var serialized = JsonSerializer.Serialize(cart, _jsonOptions);
-        
+
         await db.StringSetAsync(key, serialized, _cacheExpiry);
         _logger.LogInformation("Updated cache for basket {UserId}", cart.UserId);
     }

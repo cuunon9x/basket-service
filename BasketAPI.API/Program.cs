@@ -37,11 +37,19 @@ builder.Services.AddEndpointsApiExplorer();
 // Add configurations
 builder.Services.AddSwaggerConfiguration();
 builder.Services.AddCorsConfiguration(builder.Configuration);
-builder.Services.AddGrpcConfiguration(builder.Configuration);
+// Note: gRPC client for Discount service is disabled as the service is not part of this containerized setup
+// builder.Services.AddGrpcConfiguration(builder.Configuration);
+// Enable MassTransit for RabbitMQ message publishing
 builder.Services.AddMassTransitConfiguration(builder.Configuration);
 
 // Add Infrastructure services (including Redis)
 builder.Services.AddInfrastructureServices(builder.Configuration);
+
+// Add MediatR
+builder.Services.AddMediatR(cfg =>
+{
+    cfg.RegisterServicesFromAssembly(typeof(ValidationBehavior<,>).Assembly);
+});
 
 // Add Validation and Behaviors
 builder.Services.AddValidatorsFromAssembly(typeof(ValidationBehavior<,>).Assembly);
@@ -83,15 +91,7 @@ builder.Services.AddHealthChecks()
         builder.Configuration.GetConnectionString("Redis")!,
         name: "redis",
         tags: new[] { "ready", "db" },
-        timeout: TimeSpan.FromSeconds(5))
-    .AddCheck<RabbitMQHealthCheck>(
-        name: "rabbitmq",
-        failureStatus: HealthStatus.Degraded,
-        tags: new[] { "ready", "messagebus" })
-    .AddCheck<DiscountServiceHealthCheck>(
-        name: "discount_grpc",
-        failureStatus: HealthStatus.Degraded,
-        tags: new[] { "ready", "grpc" });
+        timeout: TimeSpan.FromSeconds(5));
 
 // Add CORS
 builder.Services.AddCors(options =>

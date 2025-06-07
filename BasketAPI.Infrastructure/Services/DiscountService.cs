@@ -10,7 +10,7 @@ public class DiscountService : IDiscountService
     private readonly ILogger<DiscountService> _logger;
 
     public DiscountService(
-        IDiscountGrpcService grpcService, 
+        IDiscountGrpcService grpcService,
         ILogger<DiscountService> logger)
     {
         _grpcService = grpcService ?? throw new ArgumentNullException(nameof(grpcService));

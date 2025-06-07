@@ -27,7 +27,7 @@ public class RedisShoppingCartRepository : IShoppingCartRepository
         };
     }
 
-    private static string GetKey(string userId) => $"{KeyPrefix}{userId}";    public async Task<ShoppingCart?> GetByUserIdAsync(string userId)
+    private static string GetKey(string userId) => $"{KeyPrefix}{userId}"; public async Task<ShoppingCart?> GetByUserIdAsync(string userId)
     {
         try
         {
@@ -41,7 +41,7 @@ public class RedisShoppingCartRepository : IShoppingCartRepository
             }
 
             var cart = JsonSerializer.Deserialize<ShoppingCart>(data!, _jsonOptions);
-            _logger.LogInformation("Retrieved shopping cart for user {UserId} with {ItemCount} items", 
+            _logger.LogInformation("Retrieved shopping cart for user {UserId} with {ItemCount} items",
                 userId, cart?.Items.Count ?? 0);
             return cart;
         }
@@ -57,7 +57,7 @@ public class RedisShoppingCartRepository : IShoppingCartRepository
         try
         {
             var db = _redis.GetDatabase();
-            var serialized = JsonSerializer.Serialize(cart);
+            var serialized = JsonSerializer.Serialize(cart, _jsonOptions);
 
             await db.StringSetAsync(
                 $"{KeyPrefix}{cart.UserId}",
