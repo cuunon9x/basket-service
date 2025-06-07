@@ -1,352 +1,269 @@
 # Basket API
 
-A microservice for managing shopping carts with Redis caching and RabbitMQ integration, part of a larger microservices ecosystem.
+A high-performance microservice for managing shopping carts with Redis caching and RabbitMQ messaging integration.
 
 ## Overview
 
-This Basket API is one component in a microservices architecture that includes:
-- **Catalog API**: Manages product information (PostgreSQL)
-- **Basket API** (this service): Handles shopping cart operations (Redis)
-- **Discount API**: Manages product discounts (gRPC)
-- **Ordering API**: Processes orders (SQL Server)
+The Basket API provides shopping cart management capabilities with:
 
+- **Redis**: High-performance cart storage and caching
+- **RabbitMQ**: Asynchronous checkout event publishing
+- **Clean Architecture**: CQRS pattern with MediatR
+- **Docker**: Containerized deployment ready
 
-![b2](https://github.com/user-attachments/assets/a27bf81a-a511-4de0-b3d5-2ea9bc0ca984)
+![Architecture Diagram](https://github.com/user-attachments/assets/a27bf81a-a511-4de0-b3d5-2ea9bc0ca984)
 
-## Features
+## Quick Start
 
-- Shopping cart CRUD operations with Redis persistence
-- High-performance data access with Redis caching
-- Discount service integration via gRPC
-- Asynchronous checkout processing with RabbitMQ
-- Built with .NET 8 and Clean Architecture principles
-- Health monitoring and metrics collection
-- Containerized deployment with Docker
+### Using Docker (Recommended)
 
-## Prerequisites
+1. **Start all services:**
 
-- .NET 8 SDK
-- Docker and Docker Compose
-- Redis Server (included in docker-compose)
-- RabbitMQ Server (included in docker-compose)
-- Discount Service (gRPC integration)
-
-## Getting Started
-
-### Docker Deployment (Recommended)
-
-1. Clone the repository
-2. Run the services:
    ```powershell
-   docker compose up -d
+   docker-compose up -d
    ```
-3. Access the API:
-   - Swagger UI: http://localhost:5002/swagger
-   - Health Check: http://localhost:5002/health
-   - RabbitMQ Management: http://localhost:15672 (guest/guest)
 
-### Local Development
+2. **Verify services are running:**
 
-1. Start dependencies (if not using docker-compose):
    ```powershell
-   # Start Redis
-   docker run -d -p 6379:6379 --name basket-redis redis:alpine
-
-   # Start RabbitMQ
-   docker run -d -p 5672:5672 -p 15672:15672 --name basket-rabbitmq rabbitmq:3-management-alpine
+   docker-compose ps
    ```
 
-3. Update configurations if needed:
-   - Redis connection in `appsettings.json`
-   - RabbitMQ settings in `appsettings.json`
-   - Discount service gRPC endpoint in `appsettings.json`
+3. **Access the API:**
+   - **API**: http://localhost:5002
+   - **Swagger UI**: http://localhost:5002/swagger
+   - **Health Check**: http://localhost:5002/health
+   - **RabbitMQ Management**: http://localhost:15672 (guest/guest)
 
-4. Build and run:
-   ```powershell
-   dotnet build
-   dotnet run --project BasketAPI.API
-   ```
+## API Testing Examples
 
-5. Test the API:
-   - Swagger UI: http://localhost:5196/swagger
-   - Health Check: http://localhost:5196/health
+### 1. Health Check
 
-### Docker Deployment
+```powershell
+# Check service health
+Invoke-RestMethod -Uri "http://localhost:5002/health" -Method Get
+```
 
-1. Build the Docker image:
-   ```powershell
-   docker build -t basket-api .
-   ```
+### 2. Get Basket
 
-2. Run the container:   ```powershell
-   docker run -d -p 5002:80 --name basket-api basket-api
-   ```
+```powershell
+# Get basket for a user
+Invoke-RestMethod -Uri "http://localhost:5002/basket/john" -Method Get
+```
 
-## Architecture
+### 3. Create/Update Basket
+
+```powershell
+# Create a new basket with items
+$basketData = @{
+    userName = "john"
+    items = @(
+        @{
+            productId = "prod-001"
+            productName = "iPhone 14"
+            unitPrice = 999.99
+            quantity = 1
+            color = "Blue"
+        },
+        @{
+            productId = "prod-002"
+            productName = "AirPods Pro"
+            unitPrice = 249.99
+            quantity = 2
+            color = "White"
+        }
+    )
+} | ConvertTo-Json -Depth 3
+
+Invoke-RestMethod -Uri "http://localhost:5002/basket/john" `
+    -Method Post `
+    -Body $basketData `
+    -ContentType "application/json"
+```
+
+### 4. Checkout Basket
+
+```powershell
+# Process checkout
+$checkoutData = @{
+    userName = "john"
+    totalPrice = 1499.97
+    firstName = "John"
+    lastName = "Doe"
+    emailAddress = "john.doe@example.com"
+    shippingAddress = "123 Main St, City, State 12345"
+    paymentMethod = "CreditCard"
+    cardNumber = "****-****-****-1234"
+} | ConvertTo-Json
+
+Invoke-RestMethod -Uri "http://localhost:5002/basket/checkout" `
+    -Method Post `
+    -Body $checkoutData `
+    -ContentType "application/json"
+```
+
+### 5. Delete Basket
+
+```powershell
+# Delete user's basket
+Invoke-RestMethod -Uri "http://localhost:5002/basket/john" -Method Delete
+```
+
+### Using curl (Alternative)
+
+```bash
+# Get basket
+curl -X GET "http://localhost:5002/basket/john"
+
+# Create basket
+curl -X POST "http://localhost:5002/basket/john" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "userName": "john",
+    "items": [
+      {
+        "productId": "prod-001",
+        "productName": "iPhone 14",
+        "unitPrice": 999.99,
+        "quantity": 1,
+        "color": "Blue"
+      }
+    ]
+  }'
+
+# Checkout
+curl -X POST "http://localhost:5002/basket/checkout" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "userName": "john",
+    "totalPrice": 999.99,
+    "firstName": "John",
+    "lastName": "Doe",
+    "emailAddress": "john.doe@example.com",
+    "shippingAddress": "123 Main St, City, State 12345"
+  }'
+```
+
+## Architecture & Technology Stack
 
 ### Solution Structure
+
 ```
 BasketAPI.sln
-├── BasketAPI.API            # API Layer, Carter endpoints
-├── BasketAPI.Application    # Application Layer, CQRS handlers
-├── BasketAPI.Domain         # Domain Layer, Entities
-└── BasketAPI.Infrastructure # Infrastructure Layer
+├── BasketAPI.API            # Carter minimal APIs, middleware
+├── BasketAPI.Application    # CQRS handlers, validation
+├── BasketAPI.Domain         # Entities, business logic
+└── BasketAPI.Infrastructure # Redis, RabbitMQ, services
 ```
 
-### Design Patterns & Principles
-- **Clean Architecture**: Separation of concerns with layered architecture
-- **CQRS Pattern**: Separate command and query operations
-- **Domain-Driven Design**: Rich domain model with business logic
-- **Repository Pattern**: Data access abstraction
-- **Decorator Pattern**: Cross-cutting concerns like caching
-- **Mediator Pattern**: In-process messaging with MediatR
+### Key Technologies
 
-### Key Components
-- **Carter**: Minimal API endpoints organization
-- **MassTransit**: Message broker abstraction for RabbitMQ
-- **Redis**: Distributed caching and cart storage
-- **gRPC**: High-performance discount service integration
-- **FluentValidation**: Request validation
-- **Mapster**: Object mapping
-
-## API Endpoints
-
-### Basket Operations
-```http
-GET /basket/{userName}     # Get user's basket
-POST /basket/{userName}    # Update basket
-DELETE /basket/{userName}  # Delete basket
-POST /basket/checkout     # Process checkout
-```
-
-### Health Check
-```http
-GET /health              # Service health status
-```
-
-## Event Integration
-
-### Published Events
-- `BasketCheckoutEvent`: Published when a basket checkout is requested
-  ```json
-  {
-    "userName": "string",
-    "totalPrice": 0,
-    "firstName": "string",
-    "lastName": "string",
-    "emailAddress": "string",
-    "shippingAddress": "string",
-    "paymentDetails": {}
-  }
-  ```
-
-## Monitoring & Operations
-
-- Health checks for:
-  - Redis connection
-  - RabbitMQ connection
-  - Discount gRPC service
-- Logging with structured logging
-- Docker containerization
-- API documentation with Swagger
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a Pull Request
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+- **.NET 8**: Modern framework with performance improvements
+- **Carter**: Minimal API framework for clean endpoints
+- **MediatR**: CQRS pattern implementation
+- **Redis**: High-performance caching and cart storage
+- **MassTransit**: RabbitMQ message broker integration
+- **FluentValidation**: Request validation rules
+- **Serilog**: Structured logging
 
 ## Configuration
 
-### Application Settings
+### Required Settings (appsettings.json)
+
 ```json
 {
-  "Redis": {
-    "ConnectionString": "localhost:6379",
-    "DatabaseId": 0
+  "ConnectionStrings": {
+    "Redis": "localhost:6379"
   },
   "RabbitMQ": {
     "Host": "localhost",
     "Username": "guest",
-    "Password": "guest",
-    "VirtualHost": "/"
-  },
-  "DiscountGrpc": {
-    "Url": "http://localhost:5003"
+    "Password": "guest"
   }
 }
 ```
 
 ### Environment Variables
-The following environment variables can override the appsettings.json configuration:
 
-- `Redis__ConnectionString`: Redis connection string
+Override configuration with environment variables:
+
+- `ConnectionStrings__Redis`: Redis connection string
 - `RabbitMQ__Host`: RabbitMQ host address
 - `RabbitMQ__Username`: RabbitMQ username
 - `RabbitMQ__Password`: RabbitMQ password
-- `DiscountGrpc__Url`: Discount service gRPC endpoint
 
-## Testing
+## Development
 
-### Unit Tests
+### Local Setup
+
 ```powershell
-dotnet test BasketAPI.Tests.Unit
+# Clone and build
+git clone <repository-url>
+cd basket-service
+dotnet build
+
+# Start dependencies
+docker-compose up redis rabbitmq -d
+
+# Run the API
+dotnet run --project BasketAPI.API
 ```
 
-Covers:
-- Command/Query handlers
-- Domain logic
-- Validation rules
-- Service implementations
+### Testing
 
-### Integration Tests
 ```powershell
-dotnet test BasketAPI.Tests.Integration
+# Run all tests
+dotnet test
+
+# Watch mode for development
+dotnet test --watch
 ```
 
-Tests:
-- Redis repository operations
-- RabbitMQ message publishing
-- gRPC service integration
-- API endpoints
+## Monitoring & Health Checks
 
-### Performance Tests
-Located in `/tests/BasketAPI.Tests.Performance`:
-- Load testing scenarios
-- Redis cache performance
-- Checkout flow throughput
+### Health Endpoints
 
-## Monitoring
-
-### Metrics
-The service exposes the following metrics endpoints:
-
-- `/metrics`: Prometheus metrics
-- `/health`: Health check UI
-- `/health/ready`: Readiness probe
+- `/health`: Overall service health
+- `/health/ready`: Readiness probe (includes Redis)
 - `/health/live`: Liveness probe
 
-Key metrics:
-- Request latency
-- Cache hit/miss ratio
-- Message broker queue length
-- gRPC call duration
+### Monitoring Features
 
-### Logging
-Structured logging with Serilog:
-- Request/response logging
-- Error tracking
-- Performance metrics
-- Integration events
-
-Log levels:
-- `Debug`: Detailed debugging info
-- `Information`: General application flow
-- `Warning`: Handled errors
-- `Error`: Unhandled exceptions
-
-### Distributed Tracing
-OpenTelemetry integration for:
-- Request tracing
-- Cache operations
-- Message publishing
-- gRPC calls
+- **Structured Logging**: Serilog with request/response tracking
+- **Metrics**: Prometheus-compatible metrics endpoint
+- **Health Checks**: Redis connectivity monitoring
+- **Error Handling**: Global exception middleware
 
 ## Troubleshooting
 
 ### Common Issues
 
-1. Redis Connection:
-   ```
-   Error: No connection could be made...
-   Solution: Check Redis server status and connection string
-   ```
+**Redis Connection Failed**
 
-2. RabbitMQ Connection:
-   ```
-   Error: Connection refused...
-   Solution: Verify RabbitMQ service and credentials
-   ```
-
-3. gRPC Service:
-   ```
-   Error: Failed to connect to discount service...
-   Solution: Ensure Discount service is running and endpoint is correct
-   ```
-
-### Debugging
-
-1. Enable Debug Logging:
-   ```json
-   {
-     "Serilog": {
-       "MinimumLevel": {
-         "Default": "Debug"
-       }
-     }
-   }
-   ```
-
-2. Check Container Logs:
-   ```powershell
-   docker logs basket-api
-   ```
-
-3. Verify Service Dependencies:
-   ```powershell
-   curl http://localhost:5196/health
-   ```
-
-## Performance Optimization
-
-### Caching Strategy
-- TTL-based cache policy
-- Background cache refresh
-- Bulk operations support
-
-### Resource Limits
-- Redis connection pool: 100 connections
-- RabbitMQ prefetch count: 250
-- API rate limiting: 1000 req/min
-
-### Scaling
-The service can be scaled:
-- Horizontally with multiple instances
-- Vertically by increasing resources
-- Cache cluster expansion
-
-Recommended instance resources:
-- CPU: 2 cores
-- Memory: 2GB
-- Network: 1Gbps
-
-## Deployment
-
-### Kubernetes
-
-1. Apply configurations:
-   ```powershell
-   kubectl apply -f k8s/
-   ```
-
-2. Verify deployment:
-   ```powershell
-   kubectl get pods -l app=basket-api
-   ```
-
-### Docker Compose
 ```powershell
-docker-compose up -d
+# Check Redis status
+docker logs basket-service-redis-1
+
+# Test connection
+redis-cli -h localhost -p 6379 ping
 ```
 
-Included services:
-- Basket API
-- Redis
-- RabbitMQ
-- Monitoring stack
+**RabbitMQ Connection Issues**
+
+```powershell
+# Check RabbitMQ status
+docker logs basket-service-rabbitmq-1
+
+# Access management UI
+# http://localhost:15672 (guest/guest)
+```
+
+**Service Health Check**
+
+```powershell
+# Check overall health
+Invoke-RestMethod http://localhost:5002/health
+
+# Check container logs
+docker-compose logs basketapi
+```
