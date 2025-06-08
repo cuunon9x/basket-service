@@ -10,6 +10,8 @@
 
 High-performance microservice for shopping cart management with **PostgreSQL + Redis** dual-datastore architecture, **gRPC integration**, and **MassTransit messaging**.
 
+![b3](https://github.com/user-attachments/assets/c9d865b0-2efa-4097-bc42-5853338f83de)
+
 ## 🚀 Quick Start
 
 ```powershell
