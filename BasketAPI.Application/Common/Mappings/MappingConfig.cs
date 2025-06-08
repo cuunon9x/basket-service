@@ -14,11 +14,9 @@ public class MappingConfig : IRegister
             .Map(dest => dest.ProductId, src => src.ProductId)
             .Map(dest => dest.ProductName, src => src.ProductName)
             .Map(dest => dest.UnitPrice, src => src.UnitPrice)
-            .Map(dest => dest.Quantity, src => src.Quantity);
-
-        // Shopping Cart mappings
+            .Map(dest => dest.Quantity, src => src.Quantity);        // Shopping Cart mappings
         config.NewConfig<UpdateBasketCommand, ShoppingCart>()
-            .Map(dest => dest.UserId, src => src.UserName)
+            .Map(dest => dest.UserName, src => src.UserName)
             .Map(dest => dest.Items, src => src.Items);
 
         // Checkout mappings

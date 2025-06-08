@@ -9,9 +9,9 @@ namespace BasketAPI.Infrastructure.Persistence.Decorators;
 /// <summary>
 /// Caching decorator that adds Redis caching on top of the base repository
 /// </summary>
-public class CachingShoppingCartRepositoryDecorator : IShoppingCartRepository
+public class CachingShoppingCartRepositoryDecorator : IBasketRepository
 {
-    private readonly IShoppingCartRepository _baseRepository;
+    private readonly IBasketRepository _baseRepository;
     private readonly IConnectionMultiplexer _redis;
     private readonly ILogger<CachingShoppingCartRepositoryDecorator> _logger;
     private const string KeyPrefix = "basket:";
@@ -19,7 +19,7 @@ public class CachingShoppingCartRepositoryDecorator : IShoppingCartRepository
     private readonly TimeSpan _cacheExpiry = TimeSpan.FromHours(24); // 24 hours cache
 
     public CachingShoppingCartRepositoryDecorator(
-        IShoppingCartRepository baseRepository,
+        IBasketRepository baseRepository,
         IConnectionMultiplexer redis,
         ILogger<CachingShoppingCartRepositoryDecorator> logger)
     {
@@ -33,114 +33,114 @@ public class CachingShoppingCartRepositoryDecorator : IShoppingCartRepository
         };
     }
 
-    private static string GetKey(string userId) => $"{KeyPrefix}{userId}";
+    private static string GetKey(string userName) => $"{KeyPrefix}{userName}";
 
-    public async Task<ShoppingCart?> GetByUserIdAsync(string userId)
+    public async Task<ShoppingCart?> GetBasketAsync(string userName)
     {
         try
         {
-            var key = GetKey(userId);
+            var key = GetKey(userName);
             var db = _redis.GetDatabase();
-            
+
             // Try to get from cache first
             var cachedData = await db.StringGetAsync(key);
             if (!cachedData.IsNullOrEmpty)
             {
-                _logger.LogDebug("Cache HIT: Retrieved basket for user {UserId} from Redis", userId);
+                _logger.LogDebug("Cache HIT: Retrieved basket for user {UserName} from Redis", userName);
                 return JsonSerializer.Deserialize<ShoppingCart>(cachedData!, _jsonOptions);
             }
 
-            _logger.LogDebug("Cache MISS: Getting basket for user {UserId} from PostgreSQL", userId);
-            
+            _logger.LogDebug("Cache MISS: Getting basket for user {UserName} from PostgreSQL", userName);
+
             // Get from base repository (PostgreSQL)
-            var cart = await _baseRepository.GetByUserIdAsync(userId);
-            
+            var cart = await _baseRepository.GetBasketAsync(userName);
+
             // Cache the result if found
             if (cart != null)
             {
                 var serializedCart = JsonSerializer.Serialize(cart, _jsonOptions);
                 await db.StringSetAsync(key, serializedCart, _cacheExpiry);
-                _logger.LogDebug("Cached basket for user {UserId} in Redis", userId);
+                _logger.LogDebug("Cached basket for user {UserName} in Redis", userName);
             }
-            
+
             return cart;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error in caching decorator while getting basket for user {UserId}", userId);
+            _logger.LogError(ex, "Error in caching decorator while getting basket for user {UserName}", userName);
             // If caching fails, fallback to base repository
-            return await _baseRepository.GetByUserIdAsync(userId);
+            return await _baseRepository.GetBasketAsync(userName);
         }
     }
 
-    public async Task<ShoppingCart> UpdateAsync(ShoppingCart cart)
+    public async Task<ShoppingCart> StoreBasketAsync(ShoppingCart cart)
     {
         try
         {
             // Update in base repository (PostgreSQL) first
-            var updatedCart = await _baseRepository.UpdateAsync(cart);
-            
+            var updatedCart = await _baseRepository.StoreBasketAsync(cart);
+
             // Update cache
-            var key = GetKey(cart.UserId);
+            var key = GetKey(cart.UserName);
             var db = _redis.GetDatabase();
             var serializedCart = JsonSerializer.Serialize(updatedCart, _jsonOptions);
             await db.StringSetAsync(key, serializedCart, _cacheExpiry);
-            
-            _logger.LogDebug("Updated basket for user {UserId} in both PostgreSQL and Redis cache", cart.UserId);
+
+            _logger.LogDebug("Updated basket for user {UserName} in both PostgreSQL and Redis cache", cart.UserName);
             return updatedCart;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error in caching decorator while updating basket for user {UserId}", cart.UserId);
-            
+            _logger.LogError(ex, "Error in caching decorator while updating basket for user {UserName}", cart.UserName);
+
             // Try to invalidate cache if update failed
             try
             {
-                var key = GetKey(cart.UserId);
+                var key = GetKey(cart.UserName);
                 var db = _redis.GetDatabase();
                 await db.KeyDeleteAsync(key);
-                _logger.LogDebug("Invalidated cache for user {UserId} due to update error", cart.UserId);
+                _logger.LogDebug("Invalidated cache for user {UserName} due to update error", cart.UserName);
             }
             catch (Exception cacheEx)
             {
-                _logger.LogWarning(cacheEx, "Failed to invalidate cache for user {UserId}", cart.UserId);
+                _logger.LogWarning(cacheEx, "Failed to invalidate cache for user {UserName}", cart.UserName);
             }
-            
+
             throw;
         }
     }
 
-    public async Task DeleteAsync(string userId)
+    public async Task DeleteBasketAsync(string userName)
     {
         try
         {
             // Delete from base repository (PostgreSQL) first
-            await _baseRepository.DeleteAsync(userId);
-            
+            await _baseRepository.DeleteBasketAsync(userName);
+
             // Remove from cache
-            var key = GetKey(userId);
+            var key = GetKey(userName);
             var db = _redis.GetDatabase();
             await db.KeyDeleteAsync(key);
-            
-            _logger.LogDebug("Deleted basket for user {UserId} from both PostgreSQL and Redis cache", userId);
+
+            _logger.LogDebug("Deleted basket for user {UserName} from both PostgreSQL and Redis cache", userName);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error in caching decorator while deleting basket for user {UserId}", userId);
-            
+            _logger.LogError(ex, "Error in caching decorator while deleting basket for user {UserName}", userName);
+
             // Try to invalidate cache even if delete failed
             try
             {
-                var key = GetKey(userId);
+                var key = GetKey(userName);
                 var db = _redis.GetDatabase();
                 await db.KeyDeleteAsync(key);
-                _logger.LogDebug("Invalidated cache for user {UserId} due to delete error", userId);
+                _logger.LogDebug("Invalidated cache for user {UserName} due to delete error", userName);
             }
             catch (Exception cacheEx)
             {
-                _logger.LogWarning(cacheEx, "Failed to invalidate cache for user {UserId}", userId);
+                _logger.LogWarning(cacheEx, "Failed to invalidate cache for user {UserName}", userName);
             }
-            
+
             throw;
         }
     }

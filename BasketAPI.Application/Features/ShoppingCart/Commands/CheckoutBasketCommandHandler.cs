@@ -8,12 +8,10 @@ namespace BasketAPI.Application.Features.ShoppingCart.Commands;
 
 public class CheckoutBasketCommandHandler : IRequestHandler<CheckoutBasketCommand, bool>
 {
-    private readonly IShoppingCartRepository _repository;
+    private readonly IBasketRepository _repository;
     private readonly IMessagePublisher _messagePublisher;
-    private readonly ILogger<CheckoutBasketCommandHandler> _logger;
-
-    public CheckoutBasketCommandHandler(
-        IShoppingCartRepository repository,
+    private readonly ILogger<CheckoutBasketCommandHandler> _logger; public CheckoutBasketCommandHandler(
+        IBasketRepository repository,
         IMessagePublisher messagePublisher,
         ILogger<CheckoutBasketCommandHandler> logger)
     {
@@ -23,9 +21,8 @@ public class CheckoutBasketCommandHandler : IRequestHandler<CheckoutBasketComman
     }
 
     public async Task<bool> Handle(CheckoutBasketCommand request, CancellationToken cancellationToken)
-    {
-        // Get existing basket
-        var basket = await _repository.GetByUserIdAsync(request.UserName);
+    {        // Get existing basket
+        var basket = await _repository.GetBasketAsync(request.UserName);
         if (basket == null)
         {
             _logger.LogWarning("Basket not found for user {UserName}", request.UserName);
@@ -57,10 +54,8 @@ public class CheckoutBasketCommandHandler : IRequestHandler<CheckoutBasketComman
         {
             // Publish the checkout event
             await _messagePublisher.PublishAsync(basketCheckoutEvent, cancellationToken);
-            _logger.LogInformation("BasketCheckoutEvent published for user {UserName}", request.UserName);
-
-            // Delete the basket after successful checkout
-            await _repository.DeleteAsync(request.UserName);
+            _logger.LogInformation("BasketCheckoutEvent published for user {UserName}", request.UserName);            // Delete the basket after successful checkout
+            await _repository.DeleteBasketAsync(request.UserName);
             _logger.LogInformation("Basket deleted for user {UserName}", request.UserName);
 
             return true;

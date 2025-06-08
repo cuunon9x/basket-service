@@ -8,11 +8,9 @@ public record DeleteBasketCommand(string UserName) : IRequest;
 
 public class DeleteBasketCommandHandler : IRequestHandler<DeleteBasketCommand>
 {
-    private readonly IShoppingCartRepository _repository;
-    private readonly ILogger<DeleteBasketCommandHandler> _logger;
-
-    public DeleteBasketCommandHandler(
-        IShoppingCartRepository repository,
+    private readonly IBasketRepository _repository;
+    private readonly ILogger<DeleteBasketCommandHandler> _logger; public DeleteBasketCommandHandler(
+        IBasketRepository repository,
         ILogger<DeleteBasketCommandHandler> logger)
     {
         _repository = repository;
@@ -23,7 +21,7 @@ public class DeleteBasketCommandHandler : IRequestHandler<DeleteBasketCommand>
     {
         try
         {
-            await _repository.DeleteAsync(request.UserName);
+            await _repository.DeleteBasketAsync(request.UserName);
             _logger.LogInformation("Basket deleted for user {UserName}", request.UserName);
         }
         catch (Exception ex)

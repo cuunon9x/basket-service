@@ -11,12 +11,10 @@ public record UpdateBasketCommand(string UserName, List<CartItem> Items) : IRequ
 
 public class UpdateBasketCommandHandler : IRequestHandler<UpdateBasketCommand, Domain.Entities.ShoppingCart>
 {
-    private readonly IShoppingCartRepository _repository;
+    private readonly IBasketRepository _repository;
     private readonly IDiscountService _discountService;
-    private readonly ILogger<UpdateBasketCommandHandler> _logger;
-
-    public UpdateBasketCommandHandler(
-        IShoppingCartRepository repository,
+    private readonly ILogger<UpdateBasketCommandHandler> _logger;    public UpdateBasketCommandHandler(
+        IBasketRepository repository,
         IDiscountService discountService,
         ILogger<UpdateBasketCommandHandler> logger)
     {
@@ -45,13 +43,9 @@ public class UpdateBasketCommandHandler : IRequestHandler<UpdateBasketCommand, D
 
             await cartItem.ApplyDiscount(_discountService, _logger);
             cart.AddItem(cartItem);
-        }
-
-        // Save to repository
-        var updatedCart = await _repository.UpdateAsync(cart);
-
-        _logger.LogInformation("Successfully updated basket for user {UserName}. Total items: {ItemCount}",
-            updatedCart.UserId, updatedCart.Items.Count);
+        }        // Save to repository
+        var updatedCart = await _repository.StoreBasketAsync(cart);        _logger.LogInformation("Successfully updated basket for user {UserName}. Total items: {ItemCount}",
+            updatedCart.UserName, updatedCart.Items.Count);
 
         return updatedCart;
     }

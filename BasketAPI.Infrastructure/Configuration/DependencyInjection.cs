@@ -12,29 +12,28 @@ using Microsoft.Extensions.DependencyInjection;
 namespace BasketAPI.Infrastructure.Configuration;
 
 public static class DependencyInjection
-{    public static IServiceCollection AddInfrastructureServices(
+{
+    public static IServiceCollection AddInfrastructureServices(
         this IServiceCollection services,
         IConfiguration configuration)
     {
         // Add PostgreSQL with Marten
         services.AddMarten(configuration);
-        
+
         // Add Redis
         services.AddRedis(configuration);
 
         // Register metrics
-        services.AddSingleton<IMetrics, PrometheusMetrics>();
-
-        // Register repositories using decorator pattern
+        services.AddSingleton<IMetrics, PrometheusMetrics>();        // Register repositories using decorator pattern
         // 1. Base repository (PostgreSQL with Marten)
         services.AddScoped<MartenShoppingCartRepository>();
-        services.AddScoped<IShoppingCartRepository, MartenShoppingCartRepository>();
+        services.AddScoped<IBasketRepository, MartenShoppingCartRepository>();
 
         // 2. Apply decorators in order (innermost to outermost)
         // Note: The order is important - decorators are applied from inside out
-        services.Decorate<IShoppingCartRepository, MetricsShoppingCartRepositoryDecorator>();
-        services.Decorate<IShoppingCartRepository, LoggingShoppingCartDecorator>();
-        services.Decorate<IShoppingCartRepository, CachingShoppingCartRepositoryDecorator>();
+        services.Decorate<IBasketRepository, MetricsShoppingCartRepositoryDecorator>();
+        services.Decorate<IBasketRepository, LoggingShoppingCartDecorator>();
+        services.Decorate<IBasketRepository, CachingShoppingCartRepositoryDecorator>();
 
         // Register discount service (stub for this containerized setup)
         services.AddScoped<IDiscountService, StubDiscountService>();

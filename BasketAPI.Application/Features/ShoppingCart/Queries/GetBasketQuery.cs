@@ -8,11 +8,9 @@ public record GetBasketQuery(string UserName) : IRequest<Domain.Entities.Shoppin
 
 public class GetBasketQueryHandler : IRequestHandler<GetBasketQuery, Domain.Entities.ShoppingCart?>
 {
-    private readonly IShoppingCartRepository _repository;
-    private readonly ILogger<GetBasketQueryHandler> _logger;
-
-    public GetBasketQueryHandler(
-        IShoppingCartRepository repository,
+    private readonly IBasketRepository _repository;
+    private readonly ILogger<GetBasketQueryHandler> _logger;    public GetBasketQueryHandler(
+        IBasketRepository repository,
         ILogger<GetBasketQueryHandler> logger)
     {
         _repository = repository;
@@ -25,7 +23,7 @@ public class GetBasketQueryHandler : IRequestHandler<GetBasketQuery, Domain.Enti
     {
         try
         {
-            var basket = await _repository.GetByUserIdAsync(request.UserName);
+            var basket = await _repository.GetBasketAsync(request.UserName);
             
             if (basket == null)
             {

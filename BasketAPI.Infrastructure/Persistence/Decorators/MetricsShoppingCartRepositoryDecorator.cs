@@ -5,29 +5,29 @@ using BasketAPI.Infrastructure.Metrics;
 
 namespace BasketAPI.Infrastructure.Persistence.Decorators;
 
-public class MetricsShoppingCartRepositoryDecorator : IShoppingCartRepository
+public class MetricsShoppingCartRepositoryDecorator : IBasketRepository
 {
-    private readonly IShoppingCartRepository _inner;
+    private readonly IBasketRepository _inner;
     private readonly IMetrics _metrics;
 
-    public MetricsShoppingCartRepositoryDecorator(IShoppingCartRepository inner, IMetrics metrics)
+    public MetricsShoppingCartRepositoryDecorator(IBasketRepository inner, IMetrics metrics)
     {
         _inner = inner;
         _metrics = metrics;
     }
 
-    public async Task<ShoppingCart> UpdateAsync(ShoppingCart basket)
+    public async Task<ShoppingCart> StoreBasketAsync(ShoppingCart basket)
     {
         var timer = new Stopwatch();
         timer.Start();
 
         try
         {
-            var result = await _inner.UpdateAsync(basket);
+            var result = await _inner.StoreBasketAsync(basket);
             _metrics.IncrementCounter(
                 "basket_repository_operations_total",
                 "Total number of basket repository operations",
-                "update", "success");
+                "store", "success");
 
             return result;
         }
@@ -36,7 +36,7 @@ public class MetricsShoppingCartRepositoryDecorator : IShoppingCartRepository
             _metrics.IncrementCounter(
                 "basket_repository_operations_total",
                 "Total number of basket repository operations",
-                "update", "error");
+                "store", "error");
             throw;
         }
         finally
@@ -46,18 +46,18 @@ public class MetricsShoppingCartRepositoryDecorator : IShoppingCartRepository
                 "basket_repository_operation_duration_seconds",
                 "Duration of basket repository operations in seconds",
                 timer.Elapsed.TotalSeconds,
-                "update");
+                "store");
         }
     }
 
-    public async Task DeleteAsync(string userName)
+    public async Task DeleteBasketAsync(string userName)
     {
         var timer = new Stopwatch();
         timer.Start();
 
         try
         {
-            await _inner.DeleteAsync(userName);
+            await _inner.DeleteBasketAsync(userName);
             _metrics.IncrementCounter(
                 "basket_repository_operations_total",
                 "Total number of basket repository operations",
@@ -82,18 +82,18 @@ public class MetricsShoppingCartRepositoryDecorator : IShoppingCartRepository
         }
     }
 
-    public async Task<ShoppingCart?> GetByUserIdAsync(string userId)
+    public async Task<ShoppingCart?> GetBasketAsync(string userName)
     {
         var timer = new Stopwatch();
         timer.Start();
 
         try
         {
-            var result = await _inner.GetByUserIdAsync(userId);
+            var result = await _inner.GetBasketAsync(userName);
             _metrics.IncrementCounter(
                 "basket_repository_operations_total",
                 "Total number of basket repository operations",
-                "getbyuserid", result == null ? "miss" : "hit");
+                "get", result == null ? "miss" : "hit");
 
             return result;
         }
@@ -104,7 +104,7 @@ public class MetricsShoppingCartRepositoryDecorator : IShoppingCartRepository
                 "basket_repository_operation_duration_seconds",
                 "Duration of basket repository operations in seconds",
                 timer.Elapsed.TotalSeconds,
-                "getbyuserid");
+                "get");
         }
     }
 }

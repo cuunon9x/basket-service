@@ -21,7 +21,7 @@ public class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<TReques
         var context = new ValidationContext<TRequest>(request);
 
         var validationResults = await Task.WhenAll(
-            _validators.Select(v => v.ValidateAsync(context, cancellationToken)));        var failures = validationResults
+            _validators.Select(v => v.ValidateAsync(context, cancellationToken))); var failures = validationResults
             .Where(r => r.Errors.Any())
             .SelectMany(r => r.Errors)
             .GroupBy(e => e.PropertyName, e => e.ErrorMessage)
@@ -32,7 +32,7 @@ public class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<TReques
             var errorsDictionary = failures.ToDictionary(
                 kvp => kvp.Key,
                 kvp => kvp.Value);
-                
+
             throw new DomainValidationException(errorsDictionary);
         }
 

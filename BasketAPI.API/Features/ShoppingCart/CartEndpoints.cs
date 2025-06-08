@@ -33,7 +33,7 @@ public class CartEndpoints : ICarterModule
             try
             {
                 var result = await mediator.Send(query);
-                return result is null 
+                return result is null
                     ? Results.Problem(
                         statusCode: StatusCodes.Status404NotFound,
                         title: "Basket not found",
@@ -53,7 +53,7 @@ public class CartEndpoints : ICarterModule
         .Produces(StatusCodes.Status404NotFound);
 
         // Update basket
-        group.MapPost("/{userName}", async ([FromRoute] string userName, 
+        group.MapPost("/{userName}", async ([FromRoute] string userName,
             [FromBody] UpdateBasketCommand command, [FromServices] ISender mediator) =>
         {
             try
@@ -65,7 +65,7 @@ public class CartEndpoints : ICarterModule
                         title: "Username mismatch",
                         detail: "The username in the URL does not match the username in the request body");
                 }
-                
+
                 var result = await mediator.Send(command);
                 return Results.Ok(result);
             }

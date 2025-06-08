@@ -5,82 +5,82 @@ using System.Diagnostics;
 
 namespace BasketAPI.Infrastructure.Persistence.Decorators;
 
-public class LoggingShoppingCartDecorator : IShoppingCartRepository
+public class LoggingShoppingCartDecorator : IBasketRepository
 {
-    private readonly IShoppingCartRepository _decorated;
+    private readonly IBasketRepository _decorated;
     private readonly ILogger<LoggingShoppingCartDecorator> _logger;
 
     public LoggingShoppingCartDecorator(
-        IShoppingCartRepository decorated,
+        IBasketRepository decorated,
         ILogger<LoggingShoppingCartDecorator> logger)
     {
         _decorated = decorated;
         _logger = logger;
     }
 
-    public async Task<ShoppingCart?> GetByUserIdAsync(string userId)
+    public async Task<ShoppingCart?> GetBasketAsync(string userName)
     {
         var stopwatch = Stopwatch.StartNew();
         try
         {
-            _logger.LogInformation("Getting basket for user {UserId}", userId);
-            var result = await _decorated.GetByUserIdAsync(userId);
+            _logger.LogInformation("Getting basket for user {UserName}", userName);
+            var result = await _decorated.GetBasketAsync(userName);
             stopwatch.Stop();
 
             _logger.LogInformation(
-                "Got basket for user {UserId} in {ElapsedMilliseconds}ms. Found: {Found}",
-                userId, stopwatch.ElapsedMilliseconds, result != null);
+                "Got basket for user {UserName} in {ElapsedMilliseconds}ms. Found: {Found}",
+                userName, stopwatch.ElapsedMilliseconds, result != null);
 
             return result;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error getting basket for user {UserId}", userId);
+            _logger.LogError(ex, "Error getting basket for user {UserName}", userName);
             throw;
         }
     }
 
-    public async Task<ShoppingCart> UpdateAsync(ShoppingCart cart)
+    public async Task<ShoppingCart> StoreBasketAsync(ShoppingCart cart)
     {
         var stopwatch = Stopwatch.StartNew();
         try
         {
             _logger.LogInformation(
-                "Updating basket for user {UserId}. Items count: {ItemsCount}",
-                cart.UserId, cart.Items.Count);
+                "Storing basket for user {UserName}. Items count: {ItemsCount}",
+                cart.UserName, cart.Items.Count);
 
-            var result = await _decorated.UpdateAsync(cart);
+            var result = await _decorated.StoreBasketAsync(cart);
             stopwatch.Stop();
 
             _logger.LogInformation(
-                "Updated basket for user {UserId} in {ElapsedMilliseconds}ms",
-                cart.UserId, stopwatch.ElapsedMilliseconds);
+                "Stored basket for user {UserName} in {ElapsedMilliseconds}ms",
+                cart.UserName, stopwatch.ElapsedMilliseconds);
 
             return result;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error updating basket for user {UserId}", cart.UserId);
+            _logger.LogError(ex, "Error storing basket for user {UserName}", cart.UserName);
             throw;
         }
     }
 
-    public async Task DeleteAsync(string userId)
+    public async Task DeleteBasketAsync(string userName)
     {
         var stopwatch = Stopwatch.StartNew();
         try
         {
-            _logger.LogInformation("Deleting basket for user {UserId}", userId);
-            await _decorated.DeleteAsync(userId);
+            _logger.LogInformation("Deleting basket for user {UserName}", userName);
+            await _decorated.DeleteBasketAsync(userName);
             stopwatch.Stop();
 
             _logger.LogInformation(
-                "Deleted basket for user {UserId} in {ElapsedMilliseconds}ms",
-                userId, stopwatch.ElapsedMilliseconds);
+                "Deleted basket for user {UserName} in {ElapsedMilliseconds}ms",
+                userName, stopwatch.ElapsedMilliseconds);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error deleting basket for user {UserId}", userId);
+            _logger.LogError(ex, "Error deleting basket for user {UserName}", userName);
             throw;
         }
     }

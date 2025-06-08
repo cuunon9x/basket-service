@@ -3,7 +3,8 @@ using FluentValidation;
 namespace BasketAPI.Application.Features.ShoppingCart.Commands;
 
 public class CheckoutBasketCommandValidator : AbstractValidator<CheckoutBasketCommand>
-{    public CheckoutBasketCommandValidator()
+{
+    public CheckoutBasketCommandValidator()
     {
         RuleFor(v => v.UserName)
             .NotEmpty().WithMessage("UserName is required")

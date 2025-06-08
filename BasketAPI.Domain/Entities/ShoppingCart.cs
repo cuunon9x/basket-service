@@ -5,16 +5,20 @@ namespace BasketAPI.Domain.Entities;
 
 public class ShoppingCart : Entity
 {
-    public string UserId { get; private set; }
-    public List<CartItem> Items { get; private set; } = new(); public ShoppingCart(string userId)
+    public string UserName { get; private set; }
+    public List<CartItem> Items { get; private set; } = new();
+
+    public ShoppingCart(string userName)
     {
-        UserId = userId;
-    }    // Constructor for JSON deserialization
+        UserName = userName;
+    }
+
+    // Constructor for JSON deserialization
     [JsonConstructor]
-    public ShoppingCart(Guid id, string userId, List<CartItem> items)
+    public ShoppingCart(Guid id, string userName, List<CartItem> items)
     {
         Id = id;
-        UserId = userId;
+        UserName = userName;
         Items = items ?? new List<CartItem>();
     }
 
