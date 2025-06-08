@@ -11,12 +11,15 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
       - ConnectionStrings__Redis=redis:6379
+      - ConnectionStrings__PostgreSQL=Host=postgres;Database=basketdb;Username=basketuser;Password=basketpass
       - GrpcSettings__DiscountUrl=http://discount-grpc:5003
       - RabbitMQ__Host=rabbitmq
     depends_on:
       redis:
         condition: service_healthy
       rabbitmq:
+        condition: service_healthy
+      postgres:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:80/health/live || exit 1"]
@@ -60,6 +63,24 @@ services:
     networks:
       - microservices-network
 
+  postgres:
+    image: postgres:15-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=basketdb
+      - POSTGRES_USER=basketuser
+      - POSTGRES_PASSWORD=basketpass
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - microservices-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U basketuser -d basketdb"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
 networks:
   microservices-network:
     driver: bridge
@@ -67,3 +88,4 @@ networks:
 volumes:
   redis-data:
   rabbitmq-data:
+  postgres-data:

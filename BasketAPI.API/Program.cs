@@ -45,6 +45,10 @@ builder.Services.AddMassTransitConfiguration(builder.Configuration);
 // Add Infrastructure services (including Redis)
 builder.Services.AddInfrastructureServices(builder.Configuration);
 
+// Register PostgreSQL Health Check
+builder.Services.AddScoped<PostgreSQLHealthCheck>(provider =>
+    new PostgreSQLHealthCheck(builder.Configuration.GetConnectionString("PostgreSQL")!));
+
 // Add MediatR
 builder.Services.AddMediatR(cfg =>
 {
@@ -90,6 +94,9 @@ builder.Services.AddHealthChecks()
     .AddRedis(
         builder.Configuration.GetConnectionString("Redis")!,
         name: "redis",
+        tags: new[] { "ready", "db" },
+        timeout: TimeSpan.FromSeconds(5))
+    .AddCheck<PostgreSQLHealthCheck>("postgresql",
         tags: new[] { "ready", "db" },
         timeout: TimeSpan.FromSeconds(5));
 

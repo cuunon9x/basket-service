@@ -12,38 +12,34 @@ using Microsoft.Extensions.DependencyInjection;
 namespace BasketAPI.Infrastructure.Configuration;
 
 public static class DependencyInjection
-{
-    public static IServiceCollection AddInfrastructureServices(
+{    public static IServiceCollection AddInfrastructureServices(
         this IServiceCollection services,
         IConfiguration configuration)
     {
+        // Add PostgreSQL with Marten
+        services.AddMarten(configuration);
+        
+        // Add Redis
         services.AddRedis(configuration);
 
         // Register metrics
         services.AddSingleton<IMetrics, PrometheusMetrics>();
 
-        // Register base repository
-        services.AddScoped<RedisShoppingCartRepository>();
-        services.AddScoped<IShoppingCartRepository, RedisShoppingCartRepository>();
+        // Register repositories using decorator pattern
+        // 1. Base repository (PostgreSQL with Marten)
+        services.AddScoped<MartenShoppingCartRepository>();
+        services.AddScoped<IShoppingCartRepository, MartenShoppingCartRepository>();
 
-        // Register decorators in order (innermost to outermost)
-        // 1. Metrics - measure performance metrics
-        // 2. Logging - log operations        // 3. Caching - cache results for performance
+        // 2. Apply decorators in order (innermost to outermost)
+        // Note: The order is important - decorators are applied from inside out
         services.Decorate<IShoppingCartRepository, MetricsShoppingCartRepositoryDecorator>();
         services.Decorate<IShoppingCartRepository, LoggingShoppingCartDecorator>();
-        services.Decorate<IShoppingCartRepository, CachingShoppingCartDecorator>();
-        // Note: gRPC Client for Discount service is disabled as the service is not part of this containerized setup
-        // services.AddGrpcClient<DiscountProtoService.DiscountProtoServiceClient>(options =>
-        // {
-        //     options.Address = new Uri(configuration.GetValue<string>("GrpcSettings:DiscountUrl")!);
-        // });
-        // 
-        // services.AddScoped<IDiscountGrpcService, DiscountGrpcService>();
-        // services.AddScoped<IDiscountService, DiscountService>();
+        services.Decorate<IShoppingCartRepository, CachingShoppingCartRepositoryDecorator>();
 
-        // Register stub discount service for containerized environment without discount service
+        // Register discount service (stub for this containerized setup)
         services.AddScoped<IDiscountService, StubDiscountService>();
 
+        // Register message publisher
         services.AddScoped<IMessagePublisher, SimpleMessagePublisher>();
 
         return services;
